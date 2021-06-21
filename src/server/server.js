@@ -2,9 +2,11 @@
 /* eslint-disable semi */
 /* eslint-disable global-require */
 /* eslint-disable indent */
-import express from 'express'
-import dotenv from 'dotenv'
-import webpack from 'webpack'
+import express from 'express';
+import dotenv from 'dotenv';
+import webpack from 'webpack';
+
+import helmet from 'helmet';
 
 import React from 'react';
 import { renderToString } from 'react-dom/server';
@@ -66,7 +68,12 @@ if (ENV === 'development') {
     app.use(webpackDevMiddleware(compiler, serverConfig));
     app.use(webpackHotMiddleware(compiler));
 
-  }
+} else {
+  app.use(express.static(`${__dirname}/public`));
+  app.use(helmet());
+  app.use(helmet.permittedCrossDomainPolicies());
+  app.disable('x-powered-by');
+}
 
 app.get('*', renderApp)
 
@@ -74,6 +81,6 @@ app.listen(PORT, (err) => {
     if (err){
         console.log(err)
     } else {
-        console.log('Server running on port 3000')
+        console.log(`Server running on port ${PORT}`)
     }
 });
