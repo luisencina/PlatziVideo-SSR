@@ -17,18 +17,22 @@ import { StaticRouter } from 'react-router-dom';
 import serverRoutes from '../frontend/routes/serverRoutes'
 import reducer from '../frontend/reducers';
 import initialState from '../frontend/initialState';
+import getManifest from './getManifest';
 
 dotenv.config()
 
 const { ENV, PORT } = process.env;
 const app = express()
 
-const setResponse = (html, preloadedState) => {
+const setResponse = (html, preloadedState, manifest) => {
+  const mainStyles = manifest ? manifest['main.css'] : 'assets/app.css';
+  const mainBuild = manifest ? manifest['main.js'] : 'assets/app.js';
+
   return (`
     <!DOCTYPE html>
       <html>
         <head>
-          <link rel="stylesheet" href="assets/app.css" type="text/css">
+          <link rel="stylesheet" href="${mainStyles}" type="text/css">
           <title>Platzi Video</title>
         </head>
         <body>
@@ -36,7 +40,7 @@ const setResponse = (html, preloadedState) => {
           <script>
             window.__PRELOADED_STATE__ = ${JSON.stringify(preloadedState).replace(/</g, '\\u003c')}
           </script>
-          <script src="assets/app.js" type="text/javascript"></script>
+          <script src="${mainBuild}" type="text/javascript"></script>
         </body>
       </html>
     `)
@@ -53,7 +57,7 @@ const renderApp = (req, res) => {
     </Provider>,
   );
 
-  res.send(setResponse(html, preloadedState));
+  res.send(setResponse(html, preloadedState, req.hashManifest))
 }
 
 if (ENV === 'development') {
@@ -69,6 +73,10 @@ if (ENV === 'development') {
     app.use(webpackHotMiddleware(compiler));
 
 } else {
+  app.use((req, res, next) => {
+    if (!req.hashManifest) req.hashManifest = getManifest();
+    next();
+  });
   app.use(express.static(`${__dirname}/public`));
   app.use(helmet());
   app.use(helmet.permittedCrossDomainPolicies());
