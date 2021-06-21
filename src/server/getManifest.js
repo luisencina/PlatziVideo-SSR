@@ -7,5 +7,4 @@ const getManifest = () => {
     console.log(error);
   }
 };
-
 export default getManifest;
